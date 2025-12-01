@@ -493,10 +493,10 @@ def create_osm_dashboard():
     """)
     
     # Write to file
-    with open('osm_czech_dashboard.html', 'w', encoding='utf-8') as f:
+    with open('index.html', 'w', encoding='utf-8') as f:
         f.write('\n'.join(html_content))
     
-    print("✅ Dashboard successfully generated: osm_czech_dashboard.html")
+    print("✅ Dashboard successfully generated: index.html")
     print("✅ Heatmap generated: osm_heatmap.html")
     print(f"📊 Database SRID: {srid_info}")
     print(f"📈 Total features: {total_nodes:,} nodes, {total_ways:,} ways, {total_relations:,} relations")
