@@ -175,6 +175,9 @@ def create_osm_dashboard():
         LIMIT 10
     """, [], 'fetchall')
     
+    amenity_types = run_query(engine, """SELECT COUNT(DISTINCT amenity) FROM planet_osm_point WHERE amenity IS NOT NULL;""")
+    landuse_types = run_query(engine, """SELECT COUNT(DISTINCT landuse) FROM planet_osm_polygon WHERE landuse IS NOT NULL;""")
+    
     # Get coordinate system information
     srid_info = run_query(engine, """
         SELECT DISTINCT ST_SRID(way) as srid 
@@ -228,8 +231,16 @@ def create_osm_dashboard():
                 <div class="stat-label">Road Segments</div>
                 <div class="stat-number">{:,}</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-label">Amenity Types</div>
+                <div class="stat-number">{:,}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Landuse Types</div>
+                <div class="stat-number">{:,}</div>
+            </div>
         </div>
-    """.format(total_nodes, total_ways, total_relations, pois, buildings, roads_count))
+    """.format(total_nodes, total_ways, total_relations, pois, buildings, roads_count, amenity_types, landuse_types))
 
     # Create and add heatmap - SIMPLIFIED APPROACH
     print("Creating heatmap visualization...")
@@ -435,6 +446,37 @@ def create_osm_dashboard():
             </ul>
         </div>
     """.format(total_nodes, total_ways, buildings, roads_count, pois, srid_info))
+    
+
+    html_content.append('<div class="visualization">')
+    html_content.append('<h2 class="section-title">❓ How to get data</h2>')
+    html_content.append("""<p style="color: #555; font-size: 1.05em; line-height: 1.6; margin-bottom: 25px;">
+        This section briefly explains how the dataset used in this dashboard was obtained and prepared. 
+        The process is described from a developer's point of view, assuming basic familiarity with 
+        programming and databases.
+    </p>""")
+    list = [
+        ("""📥 Data Download""", """The raw OpenStreetMap data was downloaded from <strong>Geofabrik</strong>, a free and open provider of OSM extracts. No registration is required, and the data is fully open-source—meaning anyone can use it, modify it, or build commercial projects with it."""),
+        ("""🗄️ Database Setup""", """A fresh <strong>PostgreSQL</strong> database was created. While other SQL systems exist, PostgreSQL is especially suited for geographic data thanks to <strong>PostGIS</strong>, an extension that adds spatial types and functions. After enabling PostGIS, this database becomes the central place where all map data is stored and queried."""),
+        ("""📊 Data Import""", """The downloaded OSM file was imported into the database using <strong>osm2pgsql</strong>, a tool that converts the original .osm.pbf format into the schema that PostGIS understands. <br><br><strong>Example command used in this project:</strong><br><code style="background: #f4f4f4; padding: 10px; border-radius: 5px; display: block; margin-top: 10px; font-family: 'Courier New', monospace; overflow-x: auto;">osm2pgsql -d osmcz --create --slim --hstore --cache 2000 czech-republic-251123.osm.pbf -U postgres</code>"""),
+        ("""🔍 Data Analysis""", """Once the data was loaded, SQL queries could be run directly against the database to extract statistics about the Czech Republic dataset—everything from counts of amenities to spatial density patterns."""),
+        ("""🎨 Dashboard Generation""", """A small Python script then automated the entire process: connecting to the database, executing queries, transforming the results, and generating this interactive dashboard to make the data more readable and visually appealing."""),
+    ]
+    html_content.append('<div style="display: grid; gap: 20px;">')
+    for step_title, entry in list:
+        html_content.append(f'''<div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h4 style="color: #667eea; margin: 0 0 10px 0; font-size: 1.1em;">{step_title}</h4>
+            <p style="color: #555; line-height: 1.7; margin: 0;">{entry}</p>
+        </div>''')
+    html_content.append('</div>')
+
+    html_content.append('''<div style="margin-top: 25px; padding: 20px; background: #e8eaf6; border-radius: 10px; text-align: center; border: 2px dashed #667eea;">
+        <p style="color: #667eea; margin: 0; font-size: 1.05em;">
+            <strong>For more user-interactive exploration:</strong><br>
+            <a href="https://openstreetmap.cz" target="_blank" style="color: #667eea; text-decoration: none; font-weight: bold; border-bottom: 2px solid #667eea;">openstreetmap.cz</a>
+        </p>
+    </div>''')
+    html_content.append('</div>')
 
     # Footer
     html_content.append("""
